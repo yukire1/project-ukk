@@ -3,8 +3,14 @@ namespace App\Providers;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
+use App\Models\Layanan;
+use App\Policies\LayananPolicy; 
 
 class AuthServiceProvider extends ServiceProvider {
+
+  protected $policies = [
+    Layanan::class => LayananPolicy::class,
+  ];
   public function boot(): void {
     $this->registerPolicies();
 

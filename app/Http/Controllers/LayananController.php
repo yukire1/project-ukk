@@ -1,95 +1,140 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 use App\Models\Layanan;
 use App\Models\Penduduk;
 use App\Models\TrackingLayanan;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Gate;
 
-class UserController extends Controller
+class LayananController extends Controller
 {
     use AuthorizesRequests;
-    // ...
-}
-class LayananController extends Controller {
-  public function index() {
-    $user = auth()->user();
-    if ($user->hasRole('admin') || $user->hasRole('kepala_desa')) {
-      $layanan = Layanan::with('penduduk')->orderByDesc('tanggal_pengajuan')->paginate(15);
-    } else {
-      // warga: hanya lihat miliknya
-      $penduduk = $user->penduduk;
-      $layanan = Layanan::where('penduduk_id', $penduduk->id)->orderByDesc('tanggal_pengajuan')->paginate(15);
+
+    public function index()
+    {
+        $user = auth()->user();
+
+        if ($user && ($user->hasRole('admin') || $user->hasRole('kepala_desa'))) {
+            $layanans = Layanan::with('penduduk')->orderByDesc('created_at')->get();
+        } else {
+            $pendudukId = $user->penduduk->id ?? null;
+            $layanans = $pendudukId ? Layanan::with('penduduk')->where('penduduk_id', $pendudukId)->orderByDesc('created_at')->get() : collect();
+        }
+
+        return view('layanan.index', compact('layanans'));
     }
-    return view('layanan.index', compact('layanan'));
-  }
 
-  public function create() {
-    return view('layanan.create');
-  }
+    public function create()
+    {
+        return view('layanan.create');
+    }
 
-  public function store(Request $request) {
-    $user = auth()->user();
-    // warga membuat layanan: pastikan user punya penduduk profile
-    if (!$user->penduduk) return redirect()->back()->with('error','Lengkapi profil penduduk terlebih dahulu.');
+    public function store(Request $request)
+    {
+        $user = auth()->user();
 
-    $data = $request->validate([
-      'jenis'=>'required|in:SuratLayananUmum,BerkasKependudukan,Pengaduan',
-      'judul'=>'nullable|string|max:200',
-      'deskripsi'=>'nullable|string'
-    ]);
+        if (!$user->penduduk) {
+            return redirect()->back()->with('error','Profile penduduk belum lengkap.');
+        }
 
-    $data['penduduk_id'] = $user->penduduk->id;
-    $layanan = Layanan::create($data);
+        $data = $request->validate([
+            'jenis' => 'required|in:SuratLayananUmum,BerkasKependudukan,Pengaduan',
+            'judul' => 'nullable|string|max:200',
+            'deskripsi' => 'nullable|string',
+        ]);
 
-    // initial tracking
-    TrackingLayanan::create([
-      'layanan_id'=>$layanan->id,
-      'status'=>'Menunggu',
-      'keterangan'=>'Pengajuan dibuat oleh warga',
-      'updated_by'=>$user->id
-    ]);
+        $data['penduduk_id'] = $user->penduduk->id;
+        $data['status'] = 'Menunggu';
+        $layanan = Layanan::create($data);
 
-    return redirect()->route('layanan.index')->with('success','Layanan berhasil diajukan.');
-  }
+        TrackingLayanan::create([
+            'layanan_id' => $layanan->id,
+            'status' => $layanan->status,
+            'keterangan' => 'Pengajuan dibuat',
+            'updated_by' => $user->id,
+        ]);
 
-  public function show(Layanan $layanan) {
-    $this->authorize('view', $layanan); // optional policy - else check manually
-    $layanan->load('tracking','penduduk','assignedAdmin','assignedKepala');
-    return view('layanan.show', compact('layanan'));
-  }
+        return redirect()->route('layanan.index')->with('success','Layanan terkirim.');
+    }
 
-  public function edit(Layanan $layanan) {
-    // only admin or kepala can edit status/assignment
-    $this->authorize('isAdmin');
-    return view('layanan.edit', compact('layanan'));
-  }
+    public function show(Layanan $layanan)
+    {
+        $this->authorize('view', $layanan);
+        $layanan->load('penduduk','tracking');
+        return view('layanan.show', compact('layanan'));
+    }
 
-  public function update(Request $request, Layanan $layanan) {
-    $this->authorize('isAdmin');
-    $data = $request->validate([
-      'status'=>'required|in:Menunggu,Diproses,Diverifikasi,Ditolak,Selesai',
-      'assigned_admin_id'=>'nullable|exists:users,id',
-      'assigned_kepala_id'=>'nullable|exists:users,id',
-      'judul'=>'nullable|string|max:200',
-      'deskripsi'=>'nullable|string'
-    ]);
-    $layanan->update($data);
+    public function edit(Layanan $layanan)
+    {
+    
+        if (! (Gate::allows('isAdmin') || Gate::allows('isKepala')) ) {
+          $this->authorize('update', $layanan);
+        }
+        return view('layanan.edit', compact('layanan'));
+    }
 
-    // record tracking
-    TrackingLayanan::create([
-      'layanan_id'=>$layanan->id,
-      'status'=>$data['status'],
-      'keterangan'=>'Status diubah oleh admin',
-      'updated_by'=>auth()->id()
-    ]);
+    public function update(Request $request, Layanan $layanan)
+    {
+      
+  
+        // cek otorisasi — admin/kepala boleh edit semua, non-admin hanya bisa edit milik sendiri
+        if (! (Gate::allows('isAdmin') || Gate::allows('isKepala')) ) {
+          $this->authorize('update', $layanan);
+        }
 
-    return redirect()->route('layanan.show',$layanan)->with('success','Layanan diperbarui.');
-  }
+        // base rules untuk semua user
+        $rules = [
+          'jenis' => 'required|in:SuratLayananUmum,BerkasKependudukan,Pengaduan',
+          'judul' => 'nullable|string|max:200',
+          'deskripsi' => 'nullable|string'
+        ];
 
-  public function destroy(Layanan $layanan) {
-    $this->authorize('isAdmin');
-    $layanan->delete();
-    return redirect()->route('layanan.index')->with('success','Layanan dihapus.');
-  }
+      
+        // // admin/kepala desa bisa ubah status
+        // if (Gate::allows('manageAll') || Gate::allows('isAdmin') || Gate::allows('isKepala')) {
+          $rules['status'] = 'nullable|in:Menunggu,Diproses,Diverifikasi,Ditolak,Selesai';
+        // }
+
+        $data = $request->validate($rules);
+
+
+        // dump($layanan); 
+        // dump($data);
+        // update base fields
+        $layanan->jenis = $data['jenis'];
+        $layanan->judul = $data['judul'] ?? $layanan->judul;
+        $layanan->deskripsi = $data['deskripsi'] ?? $layanan->deskripsi;
+
+        // update status jika ada di request dan user diizinkan
+        $oldStatus = $layanan->status;
+        // if (isset($data['status']) && !empty($data['status']) && (Gate::allows('manageAll') || Gate::allows('isAdmin') || Gate::allows('isKepala'))) {
+        $layanan->status = $data['status'];
+        // }
+
+        $layanan->save();
+        // dump($layanan); 
+    
+        // record tracking jika status berubah
+        if (isset($data['status']) && !empty($data['status']) && $oldStatus !== $data['status']) {
+          TrackingLayanan::create([
+            'layanan_id' => $layanan->id,
+            'status' => $data['status'],
+            'keterangan' => 'Status diubah dari ' . $oldStatus . ' menjadi ' . $data['status'],
+            'updated_by' => auth()->id()
+          ]);
+        }
+
+        // dd('done');
+        return redirect()->route('layanan.show', $layanan)->with('success', 'Layanan berhasil diperbarui.');
+    }
+
+    public function destroy(Layanan $layanan)
+    {
+        $this->authorize('delete', $layanan);
+        $layanan->delete();
+        return redirect()->route('layanan.index')->with('success','Layanan dihapus.');
+    }
 }
