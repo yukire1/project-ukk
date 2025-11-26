@@ -45,9 +45,9 @@
       <div class="overlay"></div>
       <div class="container text-white text-center d-flex align-items-center" style="min-height:60vh">
         <div class="w-100">
-          <h1 class="display-4 fw-bold">Selamat Datang di Project Desa</h1>
+          <h1 class="display-4 fw-bold">Selamat Datang di desa mojorangagung</h1>
           <p class="lead mb-4">Solusi energi hijau dan pemberdayaan masyarakat desa.</p>
-          <a class="btn btn-lg btn-light text-success" href="#about">Pelajari lebih lanjut</a>
+          
         </div>
       </div>
     </header>
@@ -72,8 +72,8 @@
             <div class="col-md-4">
               <div class="card shadow-sm">
                 <div class="card-body">
-                  <h5 class="card-title">Basic</h5>
-                  <p class="card-text">Cocok untuk rumah tangga kecil.</p>
+                  <h5 class="card-title">visi misi</h5>
+                  <p class="card-text">untuk memaju</p>
                   <a href="#" class="btn btn-outline-success">Choose</a>
                 </div>
               </div>

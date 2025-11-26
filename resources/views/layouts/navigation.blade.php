@@ -3,14 +3,13 @@
     <a class="navbar-brand" href="{{ url('/') }}">Sistem Desa</a>
     <div class="collapse navbar-collapse">
       <ul class="navbar-nav me-auto">
-        @can('isAdmin')
+        @if('isAdmin')
           <li class="nav-item"><a class="nav-link" href="{{ route('penduduk.index') }}">Penduduk</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ route('anggaran.index') }}">Anggaran</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ route('kegiatan.index') }}">Kegiatan</a></li>
-        @endcan
-
+        @endif
+        
         @can('manageAll')
-          <li class="nav-item"><a class="nav-link" href="{{ route('kegiatan.index') }}">Kegiatan</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ route('activity-logs.index') }}">Activity Logs</a></li>
         @endcan
 
