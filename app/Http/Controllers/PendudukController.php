@@ -28,6 +28,13 @@ class PendudukController extends Controller {
   }
 
   public function show(Penduduk $penduduk) {
+
+    $penduduk->load([
+        'user.roles',
+        'pesertaKegiatan.kegiatan',
+        'pesertaKesehatan.kesehatan',
+        'layanan'
+    ]);
     return view('penduduk.show', compact('penduduk'));
   }
 
@@ -51,7 +58,7 @@ class PendudukController extends Controller {
   }
 
   public function destroy(Penduduk $penduduk) {
-    $this->authorize('isAdmin');
+    // $this->authorize('isAdmin');
     $penduduk->delete();
     return redirect()->route('penduduk.index')->with('success','Penduduk dihapus.');
   }

@@ -1,7 +1,8 @@
+@extends('layouts.app')
+@section('content')
 <!doctype html>
 <html lang="en">
-  @extends('layouts.app')
-  <head>
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Dashboard · Project Desa</title>
@@ -10,90 +11,163 @@
       body { min-height: 100vh; }
       .sidebar { min-height: 100vh; }
       .active-link { background: #d6f35b; color: #0b3f36 !important; }
+      .stat-card { border-left: 4px solid #0b3f36; }
+      .visi-misi-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
     </style>
-  </head>
-  @section('content')
-  <body>
-    <nav class="navbar navbar-dark bg-dark sticky-top">
-      <div class="container-fluid">
-        <button class="btn btn-outline-light d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar">Menu</button>
-        <a class="navbar-brand ms-2" href="#">Project Desa</a>
-        <div class="d-flex">
-          <span class="navbar-text text-white me-3">Admin</span>
-          <a class="btn btn-outline-light" href="{{ url('/') }}">View site</a>
-        </div>
-      </div>
-    </nav>
-
+</head>
+<body>
     <div class="container-fluid">
-      <div class="row">
-        <nav class="col-md-3 col-lg-2 d-none d-md-block bg-light sidebar p-3">
-          <div class="position-sticky">
-            <ul class="nav flex-column">
-              <li class="nav-item"><a class="nav-link active-link rounded mb-1" href="#">Overview</a></li>
-              <li class="nav-item"><a class="nav-link" href="#">Users</a></li>
-              <li class="nav-item"><a class="nav-link" href="#">Services</a></li>
-              <li class="nav-item"><a class="nav-link" href="#">Reports</a></li>
-            </ul>
+      <main class="px-md-4 py-4">
+        
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h1 class="h2">Dashboard Desa</h1>
+          <div>
+            <span class="text-muted">Selamat datang, {{ auth()->user()->username }}</span>
           </div>
-        </nav>
+        </div>
 
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h2">Dashboard</h1>
-            <div>
-              <button class="btn btn-outline-secondary">Settings</button>
-            </div>
-          </div>
-
-          <div class="row g-4 mb-4">
-            <div class="col-sm-6 col-lg-3">
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <h6 class="card-title">Users</h6>
-                  <p class="display-6 mb-0">1,234</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-sm-6 col-lg-3">
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <h6 class="card-title">Active Services</h6>
-                  <p class="display-6 mb-0">24</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-sm-6 col-lg-3">
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <h6 class="card-title">Revenue</h6>
-                  <p class="display-6 mb-0">$12k</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-sm-6 col-lg-3">
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <h6 class="card-title">Tickets</h6>
-                  <p class="display-6 mb-0">7</p>
-                </div>
+        <!-- Statistik Utama -->
+        <div class="row g-4 mb-5">
+          <div class="col-sm-6 col-lg-3">
+            <div class="card shadow-sm stat-card">
+              <div class="card-body">
+                <h6 class="card-title text-muted">Total Warga</h6>
+                <p class="display-5 mb-0 fw-bold">{{ $totalWarga }}</p>
+                <small class="text-muted">Penduduk terdaftar</small>
               </div>
             </div>
           </div>
 
-          <div class="card mb-4">
-            <div class="card-body">
-              <h5 class="card-title">Recent activity</h5>
-              <div class="list-group list-group-flush">
-                <div class="list-group-item">User A created a service <span class="text-muted small">2h ago</span></div>
-                <div class="list-group-item">Payment received <span class="text-muted small">5h ago</span></div>
-                <div class="list-group-item">New signups <span class="text-muted small">1d ago</span></div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="card shadow-sm stat-card">
+              <div class="card-body">
+                <h6 class="card-title text-muted">Request Layanan</h6>
+                <p class="display-5 mb-0 fw-bold">{{ $totalLayanan }}</p>
+                <small class="text-muted">Permintaan masuk</small>
               </div>
             </div>
           </div>
 
-        </main>
-      </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="card shadow-sm stat-card">
+              <div class="card-body">
+                <h6 class="card-title text-muted">Layanan Selesai</h6>
+                <p class="display-5 mb-0 fw-bold">{{ $layananSelesai }}</p>
+                <small class="text-muted">Status Selesai</small>
+              </div>
+            </div>
+          </div>
+
+          {{-- <div class="col-sm-6 col-lg-3">
+            <div class="card shadow-sm stat-card">
+              <div class="card-body">
+                <h6 class="card-title text-muted">Kegiatan Aktif</h6>
+                <p class="display-5 mb-0 fw-bold">{{ $kegiatanAktif }}</p>
+                <small class="text-muted">Program berjalan</small>
+              </div>
+            </div>
+          </div> --}}
+        </div>
+
+        <!-- Visi Misi -->
+        <div class="visi-misi-section rounded p-5 mb-5">
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <h3 class="fw-bold mb-3">VISI</h3>
+              <p class="lead">
+                Terwujudnya Kabupaten Sidoarjo yang Sejahtera, Maju, Berkarakter dan Berkelanjutan
+              </p>
+            </div>
+
+            <div class="col-md-6">
+              <h3 class="fw-bold mb-3">MISI</h3>
+              <ol class="ps-3">
+                <li class="mb-2">
+                  Mewujudkan tata kelola pemerintahan yang bersih, transparan dan tangkas melalui digitalisasi untuk meningkatkan kualitas pelayanan publik dan kemudahan berusaha.
+                </li>
+                <li class="mb-2">
+                  Membangkitkan pertumbuhan ekonomi dengan fokus pada kemandirian lokal berbasis usaha mikro, koperasi, pertanian, perikanan, sektor jasa dan industri untuk membuka lapangan pekerjaan dan mengurangi kemiskinan.
+                </li>
+                <li class="mb-2">
+                  Membangun infrastruktur ekonomi dan sosial yang modern dan berkeadilan dengan memperhatikan keberlanjutan lingkungan.
+                </li>
+                <li class="mb-2">
+                  Membangun SDM unggul dan berkarakter melalui peningkatan akses pelayanan bidang pendidikan, kesehatan serta kebutuhan dasar lainnya.
+                </li>
+                <li class="mb-2">
+                  Mewujudkan masyarakat religius yang berpegang teguh pada nilai – nilai keagamaan serta mampu menjaga kerukunan sosial antar warga.
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Layanan -->
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Status Layanan</h5>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-md-3 mb-3">
+                <h6 class="text-muted">Menunggu</h6>
+                <p class="display-6 fw-bold text-warning">{{ $layananMenunggu }}</p>
+              </div>
+              <div class="col-md-3 mb-3">
+                <h6 class="text-muted">Diproses</h6>
+                <p class="display-6 fw-bold text-info">{{ $layananDiproses }}</p>
+              </div>
+              <div class="col-md-3 mb-3">
+                <h6 class="text-muted">Diverifikasi</h6>
+                <p class="display-6 fw-bold text-primary">{{ $layananDiverifikasi }}</p>
+              </div>
+              <div class="col-md-3 mb-3">
+                <h6 class="text-muted">Ditolak</h6>
+                <p class="display-6 fw-bold text-danger">{{ $layananDitolak }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistik Gender Warga -->
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Statistik Gender Warga</h5>
+              </div>
+              <div class="card-body text-center">
+                <div class="row">
+                  <div class="col-6 mb-3">
+                    <h6 class="text-muted">Laki-laki</h6>
+                    <p class="display-5 fw-bold text-primary">{{ $wariaLaki }}</p>
+                  </div>
+                  <div class="col-6 mb-3">
+                    <h6 class="text-muted">Perempuan</h6>
+                    <p class="display-5 fw-bold text-danger">{{ $wariaPerempuan }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Informasi Kontak</h5>
+              </div>
+              <div class="card-body">
+                <p><strong>Kantor Desa:</strong> Jl. Utama Desa No. 1</p>
+                <p><strong>Telepon:</strong> +62-31-XXXX-XXXX</p>
+                <p><strong>Email:</strong> admin@desasidoarjo.id</p>
+                <p><strong>Website:</strong> www.desasidoarjo.id</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

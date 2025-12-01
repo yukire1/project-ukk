@@ -5,8 +5,8 @@
       <ul class="navbar-nav me-auto">
         @if('isAdmin')
           <li class="nav-item"><a class="nav-link" href="{{ route('penduduk.index') }}">Penduduk</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ route('anggaran.index') }}">Anggaran</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ route('kegiatan.index') }}">Kegiatan</a></li>
+          {{-- <li class="nav-item"><a class="nav-link" href="{{ route('anggaran.index') }}">Anggaran</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ route('kegiatan.index') }}">Kegiatan</a></li> --}}
         @endif
         
         @can('manageAll')
