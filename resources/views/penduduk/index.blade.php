@@ -16,16 +16,21 @@
       <td>{{ $p->pekerjaan }}</td>
       <td>
         <a href="{{ route('penduduk.show',$p) }}" class="btn btn-sm btn-info">Lihat</a>
-        @if(auth()->check() && (
+        {{-- @if(auth()->check() && (
             (method_exists(auth()->user(),'hasRole') && auth()->user()->hasRole('admin')) ||
             (isset(auth()->user()->role) && auth()->user()->role === 'admin')
         ))
         <a href="{{ route('penduduk.edit',$p) }}" class="btn btn-sm btn-warning">Ubah</a>
-        @endif
-        {{-- <form action="{{ route('penduduk.destroy',$p) }}" method="POST" style="display:inline">
+        @endif --}}
+        <form action="{{ route('penduduk.destroy',$p) }}" method="POST" style="display:inline">
           @csrf @method('DELETE')
+          @if(auth()->check() && (
+            (method_exists(auth()->user(),'hasRole') && auth()->user()->hasRole('admin')) ||
+            (isset(auth()->user()->role) && auth()->user()->role === 'admin')
+        ))
           <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus?')">Hapus</button>
-        </form> --}}
+          @endif
+        </form>
       </td>
     </tr>
     @endforeach

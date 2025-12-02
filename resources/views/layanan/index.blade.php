@@ -5,32 +5,45 @@
   <a href="{{ route('layanan.create') }}" class="btn btn-primary">Ajukan Layanan</a>
 </div>
 
-<table class="table table-bordered">
-  <thead>
-    <tr>
-      <th>#</th><th>Jenis</th><th>Judul</th><th>Pemohon</th><th>Status</th><th>Aksi</th>
-    </tr>
-  </thead>
-  <tbody>
-  @foreach($layanans as $l)
-    <tr>
-      <td>{{ $l->id }}</td>
-      <td>{{ $l->jenis }}</td>
-      <td>{{ $l->judul }}</td>
-      <td>{{ $l->penduduk->nama ?? '-' }}</td>
-      <td>{{ $l->status }}</td>
-      <td>
-        <a href="{{ route('layanan.show', $l) }}" class="btn btn-sm btn-info">Lihat</a>
-
-        @if(auth()->check() && (
-            (method_exists(auth()->user(),'hasRole') && auth()->user()->hasRole('admin')) ||
-            (isset(auth()->user()->role) && auth()->user()->role === 'admin')
-        ))
+@if($layanan->count())
+  <table class="table table-bordered table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>No</th>
+        <th>Jenis Layanan</th>
+        <th>Judul</th>
+        <th>Status</th>
+        <th>Tanggal</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach($layanan as $l)
+      <tr>
+        <td>{{ $loop->iteration }}</td>
+        <td>
+          <span class="badge bg-info">{{ $l->jenis }}</span>
+        </td>
+        <td>{{ $l->judul }}</td>
+        <td>
+          <span class="badge {{ $l->status === 'Selesai' ? 'bg-success' : ($l->status === 'Ditolak' ? 'bg-danger' : 'bg-warning') }}">
+            {{ $l->status }}
+          </span>
+        </td>
+        <td>{{ $l->created_at->format('d-m-Y H:i') }}</td>
+        <td>
+          <a href="{{ route('layanan.show', $l) }}" class="btn btn-sm btn-primary">Lihat</a>
           <a href="{{ route('layanan.edit', $l) }}" class="btn btn-sm btn-warning">Edit</a>
-        @endif
-      </td>
-    </tr>
-  @endforeach
-  </tbody>
-</table>
+        </td>
+      </tr>
+      @endforeach
+    </tbody>
+  </table>
+
+  {{ $layanan->links() }}
+@else
+  <div class="alert alert-info">
+    Tidak ada layanan. <a href="{{ route('layanan.create') }}">Buat layanan baru</a>
+  </div>
+@endif
 @endsection

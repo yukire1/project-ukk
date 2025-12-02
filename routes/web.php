@@ -22,6 +22,11 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 Route::middleware('guest')->group(function () {
     require __DIR__.'/auth.php';
 });
+Route::middleware('auth')->group(function () {
+    Route::resource('layanan', LayananController::class);
+     Route::get('layanan/{layanan}/cetak', [LayananController::class, 'cetak'])
+        ->name('layanan.cetak');
+});
 
 Route::middleware('auth')->group(function () {
     // Profile routes

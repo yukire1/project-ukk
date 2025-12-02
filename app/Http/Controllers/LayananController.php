@@ -2,139 +2,217 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Layanan;
+use App\Models\SuratDomisili;
 use App\Models\Penduduk;
-use App\Models\TrackingLayanan;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Response;
+
 
 class LayananController extends Controller
 {
-    use AuthorizesRequests;
-
     public function index()
     {
-        $user = auth()->user();
+        $layanan = Layanan::with('createdBy', 'penduduk')
+            ->where('created_by', Auth::id())
+            ->latest()
+            ->paginate(10);
 
-        if ($user && ($user->hasRole('admin') || $user->hasRole('kepala_desa'))) {
-            $layanans = Layanan::with('penduduk')->orderByDesc('created_at')->get();
-        } else {
-            $pendudukId = $user->penduduk->id ?? null;
-            $layanans = $pendudukId ? Layanan::with('penduduk')->where('penduduk_id', $pendudukId)->orderByDesc('created_at')->get() : collect();
-        }
-
-        return view('layanan.index', compact('layanans'));
+        return view('layanan.index', compact('layanan'));
     }
+    
 
     public function create()
     {
-        return view('layanan.create');
+        $penduduks = Penduduk::orderBy('nama')->get();
+        return view('layanan.create', compact('penduduks'));
     }
 
     public function store(Request $request)
     {
-        $user = auth()->user();
+        try {
+            // Validasi umum
+            $validated = $request->validate([
+                'jenis' => 'required|string|max:255',
+                'judul' => 'required|string|max:255',
+                'deskripsi' => 'nullable|string',
+                'keterangan' => 'nullable|string',
+            ]);
 
-        if (!$user->penduduk) {
-            return redirect()->back()->with('error','Profile penduduk belum lengkap.');
+            // Tambahkan created_by secara manual
+            $validated['created_by'] = Auth::id();
+            $validated['status'] = 'Menunggu';
+
+            // Validasi conditional
+            if ($request->jenis === 'Surat Domisili') {
+                $request->validate([
+                    'penduduk_id' => 'required|exists:penduduk,id',
+                    'nik' => 'required|string|max:16',
+                    'nama' => 'required|string|max:255',
+                    'alamat_lama' => 'required|string',
+                    'alamat_baru' => 'required|string',
+                    'alasan_pindah' => 'required|string|max:100',
+                    'tanggal_pindah' => 'nullable|date',
+                    'tanggal_surat' => 'nullable|date',
+                ]);
+
+                DB::beginTransaction();
+                try {
+                    // Buat layanan
+                    $layanan = Layanan::create($validated);
+
+                    Log::info('Layanan created:', ['id' => $layanan->id, 'jenis' => $layanan->jenis]);
+
+                    // Buat surat domisili
+                    $suratData = [
+                        'layanan_id' => $layanan->id,
+                        'penduduk_id' => $request->penduduk_id,
+                        'nomor_surat' => $request->nomor_surat ?? null,
+                        'nik' => $request->nik,
+                        'nama' => $request->nama,
+                        'alamat_lama' => $request->alamat_lama,
+                        'alamat_baru' => $request->alamat_baru,
+                        'alasan_pindah' => $request->alasan_pindah,
+                        'tanggal_pindah' => $request->tanggal_pindah ?? null,
+                        'tanggal_surat' => $request->tanggal_surat ?? now()->toDateString(),
+                        'catatan' => $request->catatan ?? null,
+                        'status' => 'Menunggu',
+                    ];
+
+                    Log::info('Creating surat domisili:', $suratData);
+
+                    $suratDomisili = SuratDomisili::create($suratData);
+
+                    Log::info('Surat domisili created:', ['id' => $suratDomisili->id]);
+
+                    DB::commit();
+
+                    return redirect()->route('layanan.show', $layanan)
+                        ->with('success', 'Layanan Surat Domisili berhasil diajukan!');
+
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Error creating surat domisili:', [
+                        'message' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['error' => 'Error: ' . $e->getMessage()]);
+                }
+            } else {
+                // Jenis layanan lain
+                $layanan = Layanan::create($validated);
+
+                return redirect()->route('layanan.show', $layanan)
+                    ->with('success', 'Layanan berhasil diajukan!');
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($e->errors());
+        } catch (\Exception $e) {
+            Log::error('Unexpected error in store:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
-
-        $data = $request->validate([
-            'jenis' => 'required|in:SuratLayananUmum,BerkasKependudukan,Pengaduan',
-            'judul' => 'nullable|string|max:200',
-            'deskripsi' => 'nullable|string',
-        ]);
-
-        $data['penduduk_id'] = $user->penduduk->id;
-        $data['status'] = 'Menunggu';
-        $layanan = Layanan::create($data);
-
-        TrackingLayanan::create([
-            'layanan_id' => $layanan->id,
-            'status' => $layanan->status,
-            'keterangan' => 'Pengajuan dibuat',
-            'updated_by' => $user->id,
-        ]);
-
-        return redirect()->route('layanan.index')->with('success','Layanan terkirim.');
     }
 
     public function show(Layanan $layanan)
     {
-        $this->authorize('view', $layanan);
-        $layanan->load('penduduk','tracking');
-        return view('layanan.show', compact('layanan'));
+        Log::info('Show layanan:', [
+            'id' => $layanan->id,
+            'jenis' => $layanan->jenis,
+            'judul' => $layanan->judul,
+        ]);
+
+        $suratDomisili = $layanan->suratDomisili;
+        
+        return view('layanan.show', compact('layanan', 'suratDomisili'));
     }
 
     public function edit(Layanan $layanan)
     {
-    
-        if (! (Gate::allows('isAdmin') || Gate::allows('isKepala')) ) {
-          $this->authorize('update', $layanan);
-        }
-        return view('layanan.edit', compact('layanan'));
+        $penduduks = Penduduk::all();
+        $suratDomisili = $layanan->suratDomisili;
+
+        return view('layanan.edit', compact('layanan', 'penduduks', 'suratDomisili'));
     }
 
     public function update(Request $request, Layanan $layanan)
     {
-      
-  
-        // cek otorisasi — admin/kepala boleh edit semua, non-admin hanya bisa edit milik sendiri
-        if (! (Gate::allows('isAdmin') || Gate::allows('isKepala')) ) {
-          $this->authorize('update', $layanan);
+        $validated = $request->validate([
+            'jenis' => 'required|string|max:255',
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+            'status' => 'required|string',
+        ]);
+
+        if ($request->jenis === 'Surat Domisili') {
+            $request->validate([
+                'penduduk_id' => 'required|exists:penduduk,id',
+                'nik' => 'required|string',
+                'nama' => 'required|string',
+                'alamat_lama' => 'required|string',
+                'alamat_baru' => 'required|string',
+                'alasan_pindah' => 'required|string',
+            ]);
+
+            $suratDomisili = $layanan->suratDomisili;
+            if ($suratDomisili) {
+                $suratDomisili->update([
+                    'penduduk_id' => $request->penduduk_id,
+                    'nik' => $request->nik,
+                    'nama' => $request->nama,
+                    'alamat_lama' => $request->alamat_lama,
+                    'alamat_baru' => $request->alamat_baru,
+                    'alasan_pindah' => $request->alasan_pindah,
+                    'tanggal_pindah' => $request->tanggal_pindah,
+                    'status' => $request->status,
+                ]);
+            }
         }
 
-        // base rules untuk semua user
-        $rules = [
-          'jenis' => 'required|in:SuratLayananUmum,BerkasKependudukan,Pengaduan',
-          'judul' => 'nullable|string|max:200',
-          'deskripsi' => 'nullable|string'
-        ];
+        $layanan->update($validated);
 
-      
-        // // admin/kepala desa bisa ubah status
-        // if (Gate::allows('manageAll') || Gate::allows('isAdmin') || Gate::allows('isKepala')) {
-          $rules['status'] = 'nullable|in:Menunggu,Diproses,Diverifikasi,Ditolak,Selesai';
-        // }
-
-        $data = $request->validate($rules);
-
-
-        // dump($layanan); 
-        // dump($data);
-        // update base fields
-        $layanan->jenis = $data['jenis'];
-        $layanan->judul = $data['judul'] ?? $layanan->judul;
-        $layanan->deskripsi = $data['deskripsi'] ?? $layanan->deskripsi;
-
-        // update status jika ada di request dan user diizinkan
-        $oldStatus = $layanan->status;
-        // if (isset($data['status']) && !empty($data['status']) && (Gate::allows('manageAll') || Gate::allows('isAdmin') || Gate::allows('isKepala'))) {
-        $layanan->status = $data['status'];
-        // }
-
-        $layanan->save();
-        // dump($layanan); 
-    
-        // record tracking jika status berubah
-        if (isset($data['status']) && !empty($data['status']) && $oldStatus !== $data['status']) {
-          TrackingLayanan::create([
-            'layanan_id' => $layanan->id,
-            'status' => $data['status'],
-            'keterangan' => 'Status diubah dari ' . $oldStatus . ' menjadi ' . $data['status'],
-            'updated_by' => auth()->id()
-          ]);
-        }
-
-        // dd('done');
-        return redirect()->route('layanan.show', $layanan)->with('success', 'Layanan berhasil diperbarui.');
+        return redirect()->route('layanan.show', $layanan)
+            ->with('success', 'Layanan berhasil diperbarui.');
     }
 
     public function destroy(Layanan $layanan)
     {
-        $this->authorize('delete', $layanan);
         $layanan->delete();
-        return redirect()->route('layanan.index')->with('success','Layanan dihapus.');
+
+        return redirect()->route('layanan.index')
+            ->with('success', 'Layanan berhasil dihapus.');
+    }
+       public function cetak(Layanan $layanan) // <-- hapus ": Response"
+    {
+        // hanya admin atau apabila layanan berstatus 'Selesai' (sesuaikan kebijakan)
+        if (auth()->user()->cannot('view', $layanan)) {
+            abort(403);
+        }
+
+        $surat = $layanan->suratDomisili;
+        if (!$surat) {
+            return redirect()->back()->withErrors(['error' => 'Data Surat Domisili tidak ditemukan.']);
+        }
+
+        $pdf = Pdf::loadView('layanan.pdf.surat_domisili', compact('layanan', 'surat'));
+
+        // stream atau download
+        return $pdf->download("surat_domisili_{$layanan->id}.pdf");
     }
 }

@@ -76,7 +76,7 @@
             <div class="col-md-6 mb-4">
               <h3 class="fw-bold mb-3">VISI</h3>
               <p class="lead">
-                Terwujudnya Kabupaten Sidoarjo yang Sejahtera, Maju, Berkarakter dan Berkelanjutan
+                Terwujudnya desa mojorangagung yang Sejahtera, Maju, Berkarakter dan Berkelanjutan
               </p>
             </div>
 
@@ -160,9 +160,11 @@
               <div class="card-body">
                 <p><strong>Kantor Desa:</strong> Jl. Utama Desa No. 1</p>
                 <p><strong>Telepon:</strong> +62-31-XXXX-XXXX</p>
-                <p><strong>Email:</strong> admin@desasidoarjo.id</p>
-                <p><strong>Website:</strong> www.desasidoarjo.id</p>
+                <p><strong>Email:</strong> admin@desamojorangagung.id</p>
+                <p><strong>Website:</strong> www.desamojorangagung.id</p>
               </div>
+              <a class="btn btn-primary-custom" href="/">kembali</a>
+
             </div>
           </div>
         </div>
