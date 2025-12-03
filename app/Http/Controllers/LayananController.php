@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Http\Controllers;
 
 use App\Models\Layanan;
@@ -32,109 +33,153 @@ class LayananController extends Controller
     public function store(Request $request)
     {
         try {
-            // Validasi umum
-            $validated = $request->validate([
-                'jenis' => 'required|string|max:255',
-                'judul' => 'required|string|max:255',
-                'deskripsi' => 'nullable|string',
-                'keterangan' => 'nullable|string',
-            ]);
+            $jenis = $request->jenis;
 
-            $validated['created_by'] = Auth::id();
-            $validated['status'] = 'Menunggu';
-
-            // Validasi conditional per jenis
-            if ($request->jenis === 'Surat Domisili') {
-                $request->validate([
-                    'penduduk_id' => 'required|exists:penduduk,id',
-                    'nik' => 'required|string|max:16',
-                    'nama' => 'required|string|max:255',
-                    'alamat_lama' => 'required|string',
-                    'alamat_baru' => 'required|string',
-                    'alasan_pindah' => 'required|string',
-                    'tanggal_pindah' => 'nullable|date',
-                    'tanggal_surat' => 'nullable|date',
-                ]);
-
-                DB::beginTransaction();
-                try {
-                    $layanan = Layanan::create($validated);
-
-                    SuratDomisili::create([
-                        'layanan_id' => $layanan->id,
-                        'penduduk_id' => $request->penduduk_id,
-                        'nomor_surat' => $request->nomor_surat ?? null,
-                        'nik' => $request->nik,
-                        'nama' => $request->nama,
-                        'alamat_lama' => $request->alamat_lama,
-                        'alamat_baru' => $request->alamat_baru,
-                        'alasan_pindah' => $request->alasan_pindah,
-                        'tanggal_pindah' => $request->tanggal_pindah ?? null,
-                        'tanggal_surat' => $request->tanggal_surat ?? now()->toDateString(),
-                        'catatan' => $request->catatan ?? null,
-                        'status' => 'Menunggu',
-                    ]);
-
-                    DB::commit();
-                    return redirect()->route('layanan.show', $layanan)
-                        ->with('success', 'Layanan Surat Domisili berhasil diajukan!');
-
-                } catch (\Exception $e) {
-                    DB::rollBack();
-                    Log::error('Error surat domisili:', ['message' => $e->getMessage()]);
-                    return redirect()->back()->withInput()
-                        ->withErrors(['error' => 'Error: ' . $e->getMessage()]);
-                }
-
-            } elseif ($request->jenis === 'Surat Layanan Umum') {
-                $request->validate([
-                    'jenis_surat' => 'required|string|max:255',
-                    'tujuan_penggunaan' => 'required|string',
-                ]);
-
-                $validated['detail'] = [
-                    'jenis_surat' => $request->jenis_surat,
-                    'tujuan_penggunaan' => $request->tujuan_penggunaan,
-                    'keterangan_surat' => $request->keterangan_surat,
-                ];
-
-            } elseif ($request->jenis === 'Keterangan Tidak Mampu') {
-                $request->validate([
-                    'nama_ktm' => 'required|string|max:255',
-                    'no_kk' => 'required|string|max:16',
-                ]);
-
-                $validated['detail'] = [
-                    'nama' => $request->nama_ktm,
-                    'no_kk' => $request->no_kk,
-                    'alasan' => $request->alasan_ktm,
-                ];
-
-            } elseif ($request->jenis === 'Pengaduan') {
-                $request->validate([
-                    'deskripsi_pengaduan' => 'required|string',
-                ]);
-
-                $validated['detail'] = [
-                    'deskripsi' => $request->deskripsi_pengaduan,
-                    'lampiran' => $request->lampiran_pengaduan,
-                ];
+            if ($jenis === 'Surat Domisili') {
+                return $this->storeSuratDomisili($request);
+            } elseif ($jenis === 'Surat Layanan Umum') {
+                return $this->storeSuratLayananUmum($request);
+            } elseif ($jenis === 'Keterangan Tidak Mampu') {
+                return $this->storeKeteranganTidakMampu($request);
+            } elseif ($jenis === 'Pengaduan') {
+                return $this->storePengaduan($request);
             }
 
-            // Buat layanan
-            $layanan = Layanan::create($validated);
+            return redirect()->back()->withErrors(['error' => 'Jenis layanan tidak valid']);
 
-            return redirect()->route('layanan.show', $layanan)
-                ->with('success', 'Layanan berhasil diajukan!');
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return redirect()->back()->withInput()
-                ->withErrors($e->errors());
         } catch (\Exception $e) {
             Log::error('Error store layanan:', ['message' => $e->getMessage()]);
             return redirect()->back()->withInput()
                 ->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
+    }
+
+    private function storeSuratDomisili(Request $request)
+    {
+        $request->validate([
+            'penduduk_id' => 'required|exists:penduduk,id',
+            'nik' => 'required|string|max:16',
+            'nama' => 'required|string|max:255',
+            'alamat_lama' => 'required|string',
+            'alamat_baru' => 'required|string',
+            'alasan_pindah' => 'required|string',
+            'tanggal_pindah' => 'nullable|date',
+            'tanggal_surat' => 'nullable|date',
+            'judul' => 'required|string',
+            'deskripsi' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $layanan = Layanan::create([
+                'jenis' => 'Surat Domisili',
+                'judul' => $request->judul,
+                'deskripsi' => $request->deskripsi,
+                'keterangan' => $request->keterangan ?? null,
+                'status' => 'Menunggu',
+                'created_by' => Auth::id(),
+                'penduduk_id' => $request->penduduk_id,
+            ]);
+
+            SuratDomisili::create([
+                'layanan_id' => $layanan->id,
+                'penduduk_id' => $request->penduduk_id,
+                'nomor_surat' => $request->nomor_surat ?? null,
+                'nik' => $request->nik,
+                'nama' => $request->nama,
+                'alamat_lama' => $request->alamat_lama,
+                'alamat_baru' => $request->alamat_baru,
+                'alasan_pindah' => $request->alasan_pindah,
+                'tanggal_pindah' => $request->tanggal_pindah ?? null,
+                'tanggal_surat' => $request->tanggal_surat ?? now()->toDateString(),
+                'catatan' => $request->catatan ?? null,
+                'status' => 'Menunggu',
+            ]);
+
+            DB::commit();
+            return redirect()->route('layanan.show', $layanan)
+                ->with('success', 'Layanan Surat Domisili berhasil diajukan!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error surat domisili:', ['message' => $e->getMessage()]);
+            return redirect()->back()->withInput()
+                ->withErrors(['error' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    private function storeSuratLayananUmum(Request $request)
+    {
+        $request->validate([
+            'jenis_surat' => 'required|string|max:255',
+            'tujuan_penggunaan' => 'required|string',
+            'judul' => 'required|string',
+        ]);
+
+        $layanan = Layanan::create([
+            'jenis' => 'Surat Layanan Umum',
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi ?? null,
+            'keterangan' => $request->keterangan ?? null,
+            'status' => 'Menunggu',
+            'created_by' => Auth::id(),
+            'detail' => [
+                'jenis_surat' => $request->jenis_surat,
+                'tujuan_penggunaan' => $request->tujuan_penggunaan,
+            ],
+        ]);
+
+        return redirect()->route('layanan.show', $layanan)
+            ->with('success', 'Layanan Surat Layanan Umum berhasil diajukan!');
+    }
+
+    private function storeKeteranganTidakMampu(Request $request)
+    {
+        $request->validate([
+            'nama_ktm' => 'required|string|max:255',
+            'no_kk' => 'required|string|max:16',
+            'judul' => 'required|string',
+        ]);
+
+        $layanan = Layanan::create([
+            'jenis' => 'Keterangan Tidak Mampu',
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi ?? null,
+            'keterangan' => $request->keterangan ?? null,
+            'status' => 'Menunggu',
+            'created_by' => Auth::id(),
+            'detail' => [
+                'nama' => $request->nama_ktm,
+                'no_kk' => $request->no_kk,
+                'alasan' => $request->alasan_ktm ?? null,
+            ],
+        ]);
+
+        return redirect()->route('layanan.show', $layanan)
+            ->with('success', 'Layanan Keterangan Tidak Mampu berhasil diajukan!');
+    }
+
+    private function storePengaduan(Request $request)
+    {
+        $request->validate([
+            'deskripsi_pengaduan' => 'required|string',
+            'judul' => 'required|string',
+        ]);
+
+        $layanan = Layanan::create([
+            'jenis' => 'Pengaduan',
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi_pengaduan,
+            'keterangan' => $request->keterangan ?? null,
+            'status' => 'Menunggu',
+            'created_by' => Auth::id(),
+            'detail' => [
+                'lampiran' => $request->lampiran_pengaduan ?? null,
+            ],
+        ]);
+
+        return redirect()->route('layanan.show', $layanan)
+            ->with('success', 'Layanan Pengaduan berhasil diajukan!');
     }
 
     public function show(Layanan $layanan)
@@ -145,23 +190,36 @@ class LayananController extends Controller
 
     public function cetak(Layanan $layanan)
     {
-        if ($layanan->jenis === 'Surat Domisili') {
-            $surat = $layanan->suratDomisili;
-            if (!$surat) {
-                return redirect()->back()->withErrors(['error' => 'Data Surat Domisili tidak ditemukan.']);
-            }
-            $pdf = Pdf::loadView('layanan.pdf.surat_domisili', compact('layanan', 'surat'));
-        } elseif ($layanan->jenis === 'Surat Layanan Umum') {
-            $pdf = Pdf::loadView('layanan.pdf.surat_layanan_umum', compact('layanan'));
-        } elseif ($layanan->jenis === 'Keterangan Tidak Mampu') {
-            $pdf = Pdf::loadView('layanan.pdf.keterangan_tidak_mampu', compact('layanan'));
-        } elseif ($layanan->jenis === 'Pengaduan') {
-            $pdf = Pdf::loadView('layanan.pdf.pengaduan', compact('layanan'));
-        } else {
-            return redirect()->back()->withErrors(['error' => 'Jenis layanan tidak didukung untuk cetak PDF.']);
-        }
+        try {
+            $pdf = null;
+            $filename = "";
 
-        return $pdf->download("surat_{$layanan->jenis}_{$layanan->id}.pdf");
+            if ($layanan->jenis === 'Surat Domisili') {
+                $surat = $layanan->suratDomisili;
+                if (!$surat) {
+                    return redirect()->back()->withErrors(['error' => 'Data Surat Domisili tidak ditemukan.']);
+                }
+                $pdf = Pdf::loadView('layanan.pdf.surat_domisili', compact('layanan', 'surat'));
+                $filename = "Surat_Domisili_{$layanan->id}.pdf";
+            } elseif ($layanan->jenis === 'Surat Layanan Umum') {
+                $pdf = Pdf::loadView('layanan.pdf.surat_layanan_umum', compact('layanan'));
+                $filename = "Surat_Layanan_Umum_{$layanan->id}.pdf";
+            } elseif ($layanan->jenis === 'Keterangan Tidak Mampu') {
+                $pdf = Pdf::loadView('layanan.pdf.keterangan_tidak_mampu', compact('layanan'));
+                $filename = "Keterangan_Tidak_Mampu_{$layanan->id}.pdf";
+            } elseif ($layanan->jenis === 'Pengaduan') {
+                $pdf = Pdf::loadView('layanan.pdf.pengaduan', compact('layanan'));
+                $filename = "Laporan_Pengaduan_{$layanan->id}.pdf";
+            } else {
+                return redirect()->back()->withErrors(['error' => 'Jenis layanan tidak didukung.']);
+            }
+
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            Log::error('Error cetak PDF:', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->withErrors(['error' => 'Gagal generate PDF: ' . $e->getMessage()]);
+        }
     }
 
     public function edit(Layanan $layanan)
@@ -174,10 +232,6 @@ class LayananController extends Controller
     public function update(Request $request, Layanan $layanan)
     {
         $validated = $request->validate([
-            'jenis' => 'required|string|max:255',
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
-            'keterangan' => 'nullable|string',
             'status' => 'required|string',
         ]);
 

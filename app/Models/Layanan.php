@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -16,10 +17,10 @@ class Layanan extends Model
         'judul',
         'deskripsi',
         'keterangan',
-        'detail',
-        'penduduk_id',
         'status',
         'created_by',
+        'penduduk_id',
+        'detail',
     ];
 
     protected $casts = [
@@ -40,6 +41,11 @@ class Layanan extends Model
 
     public function suratDomisili()
     {
-        return $this->hasOne(SuratDomisili::class, 'layanan_id');
+        return $this->hasOne(SuratDomisili::class);
+    }
+
+    public function trackingLayanan()
+    {
+        return $this->hasMany(TrackingLayanan::class);
     }
 }

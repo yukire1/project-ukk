@@ -76,10 +76,14 @@
 @endif
 <div class="mb-3">
   @can('view', $layanan)
-    @if($layanan->jenis === 'Surat Domisili' && $suratDomisili)
-      <a href="{{ route('layanan.cetak', $layanan) }}" class="btn btn-success" target="_blank">
+    @if($layanan->status === 'Selesai')
+      <a href="{{ route('layanan.cetak', $layanan) }}" class="btn btn-success" download="surat_{{ $layanan->jenis }}_{{ $layanan->id }}.pdf">
         <i class="fas fa-print"></i> Cetak Surat (PDF)
       </a>
+    @else
+      <button class="btn btn-success" disabled>
+        <i class="fas fa-print"></i> Cetak Surat (PDF) - Status belum Selesai
+      </button>
     @endif
   @endcan
 </div>

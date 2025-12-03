@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('judul');
             $table->text('deskripsi')->nullable();
             $table->text('keterangan')->nullable();
+            $table->json('detail')->nullable();
             $table->unsignedBigInteger('penduduk_id')->nullable();
             $table->string('status')->default('Menunggu');
             $table->unsignedBigInteger('created_by')->nullable();
