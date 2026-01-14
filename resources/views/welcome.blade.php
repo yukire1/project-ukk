@@ -1,8 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  @extends('layouts.app')
-  @section('content')
+  
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Welcome · Project Desa</title>
@@ -245,14 +244,30 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse nav-highlight" id="mainNav">
-          <ul class="navbar-nav ms-auto">
+          <ul class="navbar-nav me-auto">
             <li class="nav-item"><a class="nav-link" href="#tentang">Tentang mojorangagung</a></li>
             <li class="nav-item"><a class="nav-link" href="#galeri">berita</a></li>
             <li class="nav-item"><a class="nav-link" href="#kontak">tawaran</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('penduduk.index') }}">Penduduk</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('layanan.index') }}">Layanan</a></li>
           </ul>
-          <div class="d-flex ms-3">
+          <div class="d-flex ms-3 align-items-center">
             @auth
-              <a class="btn btn-primary-custom" href="/dashboard">Dashboard</a>
+              <div class="dropdown">
+                <a class="btn btn-primary-custom dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  {{ auth()->user()->username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="{{ route('profile') }}">Profile</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                      @csrf
+                      <button type="submit" class="dropdown-item">Logout</button>
+                    </form>
+                  </li>
+                </ul>
+              </div>
             @else
               <a class="btn btn-primary-custom me-2" href="/login">Login</a>
               <a class="btn btn-secondary-custom" href="/register">Register</a>
@@ -442,4 +457,3 @@ Secara administratif: Merupakan bagian dari Provinsi Jawa Timur dan Kabupaten Si
     </script>
 </body>
 </html>
-@endsection

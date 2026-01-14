@@ -136,7 +136,6 @@ class LayananController extends Controller
     private function storeKeteranganTidakMampu(Request $request)
     {
         $request->validate([
-            'nama_ktm' => 'required|string|max:255',
             'no_kk' => 'required|string|max:16',
             'judul' => 'required|string',
         ]);

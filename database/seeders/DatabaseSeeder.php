@@ -7,7 +7,6 @@ class DatabaseSeeder extends Seeder {
     $this->call([
       RolesTableSeeder::class,
       PendudukUserSeeder::class,
-      AnggaranKegiatanSeeder::class,
     ]);
   }
 }

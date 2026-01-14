@@ -157,14 +157,6 @@
     <h5 class="mb-3"><i class="fas fa-file-alt"></i> Form Keterangan Tidak Mampu</h5>
     
     <div class="mb-3">
-      <label class="form-label fw-bold">Nama</label>
-      <input type="text" class="form-control" name="nama_ktm" value="{{ old('nama_ktm') }}">
-      @error('nama_ktm')
-        <small class="text-danger">{{ $message }}</small>
-      @enderror
-    </div>
-
-    <div class="mb-3">
       <label class="form-label fw-bold">No. KK</label>
       <input type="text" class="form-control" name="no_kk" value="{{ old('no_kk') }}">
       @error('no_kk')
