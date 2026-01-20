@@ -16,10 +16,18 @@ class LayananController extends Controller
 {
     public function index()
     {
-        $layanan = Layanan::with('createdBy', 'penduduk', 'suratDomisili')
-            ->where('created_by', Auth::id())
-            ->latest()
-            ->paginate(10);
+        $user = Auth::user();
+        
+        // Query builder
+        $query = Layanan::with('createdBy', 'penduduk', 'suratDomisili');
+
+        // Jika bukan admin atau kepala_desa, hanya tampilkan request milik user
+        if (!$user->hasRole('admin') && !$user->hasRole('kepala_desa')) {
+            $query->where('created_by', $user->id);
+        }
+        // Jika admin atau kepala_desa, tampilkan semua request
+
+        $layanan = $query->latest()->paginate(10);
 
         return view('layanan.index', compact('layanan'));
     }
@@ -223,6 +231,20 @@ class LayananController extends Controller
 
     public function edit(Layanan $layanan)
     {
+        $user = Auth::user();
+        
+        // Kepala desa tidak boleh edit
+        if ($user->hasRole('kepala_desa')) {
+            return redirect()->route('layanan.show', $layanan)
+                ->withErrors(['error' => 'Anda tidak memiliki izin untuk mengedit layanan.']);
+        }
+        
+        // Admin dan pembuat request boleh edit
+        if (!$user->hasRole('admin') && $layanan->created_by !== $user->id) {
+            return redirect()->route('layanan.show', $layanan)
+                ->withErrors(['error' => 'Anda tidak memiliki izin untuk mengedit layanan ini.']);
+        }
+        
         $penduduks = Penduduk::all();
         $suratDomisili = $layanan->suratDomisili;
         return view('layanan.edit', compact('layanan', 'penduduks', 'suratDomisili'));
@@ -230,6 +252,20 @@ class LayananController extends Controller
 
     public function update(Request $request, Layanan $layanan)
     {
+        $user = Auth::user();
+        
+        // Kepala desa tidak boleh update
+        if ($user->hasRole('kepala_desa')) {
+            return redirect()->route('layanan.show', $layanan)
+                ->withErrors(['error' => 'Anda tidak memiliki izin untuk mengubah layanan.']);
+        }
+        
+        // Admin dan pembuat request boleh update
+        if (!$user->hasRole('admin') && $layanan->created_by !== $user->id) {
+            return redirect()->route('layanan.show', $layanan)
+                ->withErrors(['error' => 'Anda tidak memiliki izin untuk mengubah layanan ini.']);
+        }
+        
         $validated = $request->validate([
             'status' => 'required|string',
         ]);

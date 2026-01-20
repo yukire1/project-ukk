@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
@@ -49,20 +48,13 @@ class PasswordResetLinkController extends Controller
 
             Log::info('Token saved to database:', ['email' => $request->email]);
 
-            // Kirim email
-            $status = Password::sendResetLink(
-                $request->only('email')
-            );
+            // Kirim email langsung via User Notification (bypass Password Broker rate limit)
+            $user->notify(new \App\Notifications\ResetPasswordNotification($token));
 
-            Log::info('Password reset status:', ['status' => $status, 'email' => $request->email]);
+            Log::info('Email sent directly via User notification:', ['email' => $request->email]);
 
-            if ($status == Password::RESET_LINK_SENT) {
-                return redirect()->route('password.verify-token', ['email' => $request->email])
-                    ->with('status', 'Kode verifikasi telah dikirim ke email Anda!');
-            }
-
-            return back()->withInput($request->only('email'))
-                ->withErrors(['email' => __($status)]);
+            return redirect()->route('password.verify-token', ['email' => $request->email])
+                ->with('status', 'Kode verifikasi telah dikirim ke email Anda!');
 
         } catch (\Exception $e) {
             Log::error('Error sending password reset:', [

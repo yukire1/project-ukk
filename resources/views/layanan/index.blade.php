@@ -10,6 +10,9 @@
     <thead class="table-dark">
       <tr>
         <th>No</th>
+        @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('kepala_desa'))
+          <th>Pemohon</th>
+        @endif
         <th>Jenis Layanan</th>
         <th>Judul</th>
         <th>Status</th>
@@ -21,6 +24,12 @@
       @foreach($layanan as $l)
       <tr>
         <td>{{ $loop->iteration }}</td>
+        @if(Auth::user()->hasRole('admin') || Auth::user()->hasRole('kepala_desa'))
+          <td>
+            <strong>{{ $l->createdBy->username ?? 'N/A' }}</strong><br>
+            <small class="text-muted">{{ $l->penduduk->nama ?? 'N/A' }}</small>
+          </td>
+        @endif
         <td>
           <span class="badge bg-info">{{ $l->jenis }}</span>
         </td>
@@ -33,7 +42,9 @@
         <td>{{ $l->created_at->format('d-m-Y H:i') }}</td>
         <td>
           <a href="{{ route('layanan.show', $l) }}" class="btn btn-sm btn-primary">Lihat</a>
-          <a href="{{ route('layanan.edit', $l) }}" class="btn btn-sm btn-warning">Edit</a>
+          @if(!Auth::user()->hasRole('kepala_desa'))
+            <a href="{{ route('layanan.edit', $l) }}" class="btn btn-sm btn-warning">Edit</a>
+          @endif
         </td>
       </tr>
       @endforeach

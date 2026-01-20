@@ -3,11 +3,13 @@
     <a class="navbar-brand" href="{{ url('/') }}">Sistem Desa</a>
     <div class="collapse navbar-collapse">
       <ul class="navbar-nav me-auto">
-        @if('isAdmin')
-          <li class="nav-item"><a class="nav-link" href="{{ route('penduduk.index') }}">Penduduk</a></li>
-          {{-- <li class="nav-item"><a class="nav-link" href="{{ route('anggaran.index') }}">Anggaran</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ route('kegiatan.index') }}">Kegiatan</a></li> --}}
-        @endif
+        @auth
+          @if(auth()->user()->hasRole('admin'))
+            <li class="nav-item"><a class="nav-link" href="{{ route('penduduk.index') }}">Penduduk</a></li>
+            {{-- <li class="nav-item"><a class="nav-link" href="{{ route('anggaran.index') }}">Anggaran</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('kegiatan.index') }}">Kegiatan</a></li> --}}
+          @endif
+        @endauth
         
         @can('manageAll')
           <li class="nav-item"><a class="nav-link" href="{{ route('activity-logs.index') }}">Activity Logs</a></li>

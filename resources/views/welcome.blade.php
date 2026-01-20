@@ -248,7 +248,11 @@
             <li class="nav-item"><a class="nav-link" href="#tentang">Tentang mojorangagung</a></li>
             <li class="nav-item"><a class="nav-link" href="#galeri">berita</a></li>
             <li class="nav-item"><a class="nav-link" href="#kontak">tawaran</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ route('penduduk.index') }}">Penduduk</a></li>
+            @auth
+              @if(auth()->user()->hasRole('admin'))
+                <li class="nav-item"><a class="nav-link" href="{{ route('penduduk.index') }}">Penduduk</a></li>
+              @endif
+            @endauth
             <li class="nav-item"><a class="nav-link" href="{{ route('layanan.index') }}">Layanan</a></li>
           </ul>
           <div class="d-flex ms-3 align-items-center">
@@ -422,12 +426,11 @@ Secara administratif: Merupakan bagian dari Provinsi Jawa Timur dan Kabupaten Si
             <ul style="list-style: none; padding: 0;">
               <li><a href="{{ route('layanan.index') }}">layanan mojorangagung</a></li>
               <li><a href="#galeri">berita</a></li>
-              @if(auth()->check() && (
-            (method_exists(auth()->user(),'hasRole') && auth()->user()->hasRole('admin')) ||
-            (isset(auth()->user()->role) && auth()->user()->role === 'admin')
-        ))
-              <li><a href="{{ route('penduduk.index') }}">daftar penduduk</a></li>
-              @endif
+              @auth
+                @if(auth()->user()->hasRole('admin'))
+                  <li><a href="{{ route('penduduk.index') }}">daftar penduduk</a></li>
+                @endif
+              @endauth
             </ul>
           </div>
           <div class="col-md-4 mb-3">

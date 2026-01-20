@@ -4,7 +4,9 @@
   <h3>Detail Layanan</h3>
   <div>
     <a href="{{ route('layanan.index') }}" class="btn btn-secondary">Kembali</a>
-    <a href="{{ route('layanan.edit', $layanan) }}" class="btn btn-warning">Edit</a>
+    @if(!Auth::user()->hasRole('kepala_desa'))
+      <a href="{{ route('layanan.edit', $layanan) }}" class="btn btn-warning">Edit</a>
+    @endif
   </div>
 </div>
 
