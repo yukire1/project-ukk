@@ -84,7 +84,6 @@ class LayananController extends Controller
                 'judul' => $request->judul,
                 'deskripsi' => $request->deskripsi,
                 'keterangan' => $request->keterangan ?? null,
-                'status' => 'Menunggu',
                 'created_by' => Auth::id(),
                 'penduduk_id' => $request->penduduk_id,
             ]);
@@ -101,7 +100,6 @@ class LayananController extends Controller
                 'tanggal_pindah' => $request->tanggal_pindah ?? null,
                 'tanggal_surat' => $request->tanggal_surat ?? now()->toDateString(),
                 'catatan' => $request->catatan ?? null,
-                'status' => 'Menunggu',
             ]);
 
             DB::commit();
@@ -129,7 +127,6 @@ class LayananController extends Controller
             'judul' => $request->judul,
             'deskripsi' => $request->deskripsi ?? null,
             'keterangan' => $request->keterangan ?? null,
-            'status' => 'Menunggu',
             'created_by' => Auth::id(),
             'detail' => [
                 'jenis_surat' => $request->jenis_surat,
@@ -154,7 +151,6 @@ class LayananController extends Controller
             'deskripsi' => $request->deskripsi ?? null,
             'keterangan' => $request->keterangan ?? null,
             'status' => 'Menunggu',
-            'created_by' => Auth::id(),
             'detail' => [
                 'nama' => $request->nama_ktm,
                 'no_kk' => $request->no_kk,
@@ -179,7 +175,6 @@ class LayananController extends Controller
             'deskripsi' => $request->deskripsi_pengaduan,
             'keterangan' => $request->keterangan ?? null,
             'status' => 'Menunggu',
-            'created_by' => Auth::id(),
             'detail' => [
                 'lampiran' => $request->lampiran_pengaduan ?? null,
             ],
@@ -267,7 +262,9 @@ class LayananController extends Controller
         }
         
         $validated = $request->validate([
-            'status' => 'required|string',
+            'jenis' => 'required|string',
+            'judul' => 'required|string',
+            'deskripsi' => 'required|string',
         ]);
 
         $layanan->update($validated);

@@ -15,7 +15,6 @@
         @endif
         <th>Jenis Layanan</th>
         <th>Judul</th>
-        <th>Status</th>
         <th>Tanggal</th>
         <th>Aksi</th>
       </tr>
@@ -34,15 +33,10 @@
           <span class="badge bg-info">{{ $l->jenis }}</span>
         </td>
         <td>{{ $l->judul }}</td>
-        <td>
-          <span class="badge {{ $l->status === 'Selesai' ? 'bg-success' : ($l->status === 'Ditolak' ? 'bg-danger' : 'bg-warning') }}">
-            {{ $l->status }}
-          </span>
-        </td>
         <td>{{ $l->created_at->format('d-m-Y H:i') }}</td>
         <td>
           <a href="{{ route('layanan.show', $l) }}" class="btn btn-sm btn-primary">Lihat</a>
-          @if(!Auth::user()->hasRole('kepala_desa'))
+          @if(!Auth::user()->hasRole('kepala_desa') && !Auth::user()->hasRole('warga'))
             <a href="{{ route('layanan.edit', $l) }}" class="btn btn-sm btn-warning">Edit</a>
           @endif
         </td>

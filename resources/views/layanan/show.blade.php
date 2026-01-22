@@ -4,7 +4,7 @@
   <h3>Detail Layanan</h3>
   <div>
     <a href="{{ route('layanan.index') }}" class="btn btn-secondary">Kembali</a>
-    @if(!Auth::user()->hasRole('kepala_desa'))
+    @if(!Auth::user()->hasRole('kepala_desa') && !Auth::user()->hasRole('warga'))
       <a href="{{ route('layanan.edit', $layanan) }}" class="btn btn-warning">Edit</a>
     @endif
   </div>
@@ -21,11 +21,6 @@
         <p><strong>Jenis:</strong> <span class="badge bg-info">{{ $layanan->jenis }}</span></p>
         <p><strong>Judul:</strong> {{ $layanan->judul }}</p>
         <p><strong>Deskripsi:</strong> {{ $layanan->deskripsi ?? '-' }}</p>
-        <p><strong>Status:</strong> 
-          <span class="badge {{ $layanan->status === 'Selesai' ? 'bg-success' : ($layanan->status === 'Ditolak' ? 'bg-danger' : 'bg-warning') }}">
-            {{ $layanan->status }}
-          </span>
-        </p>
       </div>
       <div class="col-md-4">
         <p><strong>Tanggal Pengajuan:</strong><br>{{ $layanan->created_at->format('d-m-Y H:i') }}</p>
@@ -78,16 +73,19 @@
 @endif
 <div class="mb-3">
   @can('view', $layanan)
-    @if($layanan->status === 'Selesai')
-      <a href="{{ route('layanan.cetak', $layanan) }}" class="btn btn-success" download="surat_{{ $layanan->jenis }}_{{ $layanan->id }}.pdf">
-        <i class="fas fa-print"></i> Cetak Surat (PDF)
-      </a>
-    @else
-      <button class="btn btn-success" disabled>
-        <i class="fas fa-print"></i> Cetak Surat (PDF) - Status belum Selesai
-      </button>
-    @endif
+    <a href="{{ route('layanan.cetak', $layanan) }}" class="btn btn-success" download="surat_{{ $layanan->jenis }}_{{ $layanan->id }}.pdf">
+      <i class="fas fa-print"></i> Cetak Surat (PDF)
+    </a>
   @endcan
+  @if(Auth::user()->hasRole('admin'))
+    <form action="{{ route('layanan.destroy', $layanan) }}" method="POST" style="display: inline;" onsubmit="return confirm('Yakin ingin menghapus request ini?');">
+      @csrf
+      @method('DELETE')
+      <button type="submit" class="btn btn-danger">
+        <i class="fas fa-trash"></i> Hapus Request
+      </button>
+    </form>
+  @endif
 </div>
 @if($layanan->keterangan)
   <div class="card">
